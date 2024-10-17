@@ -1,0 +1,4 @@
+Pointer Arithmetic:
+    When you add an integer to a pointer, the resulting pointer is offset by that integer times the size of the data type.
+
+
