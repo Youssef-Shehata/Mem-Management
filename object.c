@@ -10,9 +10,8 @@ object_t *_new_object() {
 
   object_t *obj = calloc(1, sizeof(object_t));
   if (NULL == obj) {
-
     fprintf(stderr, "Failed to allocate heap memory.\n");
-    return NULL;
+    exit(EXIT_FAILURE);
   }
   obj->ref_count = 1;
 
@@ -53,11 +52,11 @@ void refcount_free(object_t *obj) {
 
   case ARRAY:
     printf("freeing array\n");
-    for(int i =0;i<obj->data.v_array.size; i++){
-        refcount_dec(obj->data.v_array.elements[i]);
+    for (int i = 0; i < obj->data.v_array.size; i++) {
+      refcount_dec(obj->data.v_array.elements[i]);
     }
     free(obj->data.v_array.elements);
-    obj->data.v_array.elements=NULL;
+    obj->data.v_array.elements = NULL;
     break;
   default:
     assert(false);
@@ -69,10 +68,6 @@ void refcount_free(object_t *obj) {
 
 object_t *new_integer(int value) {
   object_t *obj = _new_object();
-  if (obj == NULL) {
-    fprintf(stderr, "Failed to allocate heap memory.\n");
-    return NULL;
-  }
   obj->data.v_int = value;
   obj->kind = INTEGER;
   return obj;
@@ -80,10 +75,6 @@ object_t *new_integer(int value) {
 
 object_t *new_float(float value) {
   object_t *obj = _new_object();
-  if (obj == NULL) {
-    fprintf(stderr, "Failed to allocate heap memory.\n");
-    return NULL;
-  }
   object_data_t n = {.v_float = value};
   object_kind_t t = FLOAT;
   obj->data = n;
@@ -93,15 +84,11 @@ object_t *new_float(float value) {
 object_t *new_string(char *value) {
 
   int string_length = strlen(value);
-  if (string_length == 0) {
-    fprintf(stderr, "Provided string is empty.\n");
-    return NULL;
-  }
-  object_t *o= (object_t *)malloc(sizeof(object_t));
+  object_t *o = (object_t *)malloc(sizeof(object_t));
 
   if (o == NULL) {
     fprintf(stderr, "Failed to allocate heap memory.\n");
-    return NULL;
+    exit(EXIT_FAILURE);
   }
 
   char *ss = (char *)malloc(strlen(value) + 1);
@@ -109,7 +96,7 @@ object_t *new_string(char *value) {
   if (ss == NULL) {
     fprintf(stderr, "Failed to allocate heap memory.\n");
     free(o);
-    return NULL;
+    exit(EXIT_FAILURE);
   }
 
   strcpy(ss, value);
@@ -121,28 +108,24 @@ object_t *new_string(char *value) {
 }
 
 object_t *new_array(size_t size) {
-  if (size == 0) {
-    return NULL;
+
+  if (size <= 0) {
+    fprintf(stderr, "size must be atleast 1\n");
+    exit(EXIT_FAILURE);
   }
 
-  object_t *array_object =_new_object();
-  if (NULL == array_object) {
-    fprintf(stderr, "Failed to allocate heap memory for array.\n");
-    return NULL;
-  }
-
-
+  object_t *array_object = _new_object();
 
   object_t **elements = calloc(size, sizeof(object_t *));
 
   if (NULL == elements) {
     fprintf(stderr, "Failed to allocate heap memory.\n");
     free(array_object);
-    return NULL;
+    exit(EXIT_FAILURE);
   }
 
   array_object->kind = ARRAY;
-  array_object->data.v_array = (array_t){.size = size, .elements=elements};
+  array_object->data.v_array = (array_t){.size = size, .elements = elements};
 
   return array_object;
 }
@@ -175,16 +158,16 @@ bool array_set(object_t *obj, size_t index, object_t *value) {
 object_t *array_get(object_t *obj, size_t index) {
   if (NULL == obj) {
     fprintf(stderr, "provided obj is a null pointer.\n");
-    return NULL;
+    exit(EXIT_FAILURE);
   }
   if (obj->kind != ARRAY) {
     fprintf(stderr, "provided obj isnt an array.\n");
-    return NULL;
+    exit(EXIT_FAILURE);
   }
 
   if (index > obj->data.v_array.size) {
     fprintf(stderr, "out of bounds.\n");
-    return NULL;
+    exit(EXIT_FAILURE);
   }
 
   return obj->data.v_array.elements[index];
@@ -216,9 +199,8 @@ object_t *add(object_t *a, object_t *b) {
     free(a);
     free(b);
     fprintf(stderr, "Null Pointer Exception.\n");
-    return NULL;
+    exit(EXIT_FAILURE);
   }
-
 
   if (a->kind == INTEGER) {
     switch (b->kind) {
@@ -228,7 +210,7 @@ object_t *add(object_t *a, object_t *b) {
       return new_float(a->data.v_int + b->data.v_float);
     default:
       fprintf(stderr, "Illegal Operation.\n");
-      return NULL;
+      exit(EXIT_FAILURE);
       break;
     }
   }
@@ -238,17 +220,17 @@ object_t *add(object_t *a, object_t *b) {
     case INTEGER:
       return new_float(a->data.v_float + b->data.v_int);
     case FLOAT:
-      return  new_float(a->data.v_float + b->data.v_float);
+      return new_float(a->data.v_float + b->data.v_float);
     default:
       fprintf(stderr, "Illegal Operation.\n");
-      return NULL;
+      exit(EXIT_FAILURE);
     }
   }
 
   if (a->kind == STRING) {
     if (b->kind != STRING) {
       fprintf(stderr, "Illegal Operation.\n");
-      return NULL;
+      exit(EXIT_FAILURE);
     }
     int length1 = strlen(a->data.v_string);
     int length2 = strlen(b->data.v_string);
@@ -256,63 +238,58 @@ object_t *add(object_t *a, object_t *b) {
 
     char *temp = calloc(new_length, sizeof(char));
     if (NULL == temp) {
-      fprintf(stderr, "failed to allocate memory.\n");
-      return NULL;
+      fprintf(stderr, "Failed to allocate heap memory.\n");
+      exit(EXIT_FAILURE);
     }
     strcat(temp, a->data.v_string);
     strcat(temp, b->data.v_string);
 
     object_t *new_string_object = new_string(temp);
     free(temp);
-    if (NULL == new_string_object) {
-      fprintf(stderr, "failed to allocate memory.\n");
-      return NULL;
-    }
     return new_string_object;
   }
 
   if (a->kind == ARRAY) {
     if (b->kind != ARRAY) {
       fprintf(stderr, "Illegal Operation.\n");
-      return NULL;
+      exit(EXIT_FAILURE);
     }
-    size_t a_size= (size_t)length(a);
+    size_t a_size = (size_t)length(a);
     size_t b_size = (size_t)length(b);
-    size_t size = a_size+ b_size;
+    size_t size = a_size + b_size;
     object_t *new_arr = new_array(size);
-
 
     for (int i = 0; i < a_size; i++) {
       void *val = array_get(a, i);
       if (NULL == val) {
-        printf("failed to get from array a .\n");
+        printf("Failed to allocate heap memory.\n");
         free(new_arr);
-        return NULL;
+        exit(EXIT_FAILURE);
       }
       bool res = array_set(new_arr, i, val);
       if (res == false) {
-        printf("failed to set to array  .\n");
-        return NULL;
+        printf("failed to set to array.\n");
+        exit(EXIT_FAILURE);
       }
     }
     for (int i = 0; i < b_size; i++) {
 
       void *val = array_get(b, i);
       if (NULL == val) {
-        printf("failed to get from array b .\n");
+        printf("failed to get from array.\n");
         free(new_arr);
-        return NULL;
+        exit(EXIT_FAILURE);
       }
 
-      bool res = array_set(new_arr, i+a_size, val);
+      bool res = array_set(new_arr, i + a_size, val);
       if (res == false) {
-        printf("failed to set to array  .\n");
-        return NULL;
+        printf("failed to set to array.\n");
+        exit(EXIT_FAILURE);
       }
     }
     return new_arr;
   }
 
   fprintf(stderr, "Uknown type.\n");
-  return NULL;
+  exit(EXIT_FAILURE);
 }

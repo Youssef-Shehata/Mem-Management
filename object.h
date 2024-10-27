@@ -40,7 +40,6 @@ object_t *new_integer(int value);
 object_t *new_float(float value);
 object_t *new_string(char* value);
 object_t *new_array(size_t size);
-object_t *new_stack(size_t size);
 
 bool array_set(object_t*obj, size_t index, object_t*value) ;
 object_t*array_get(object_t*obj, size_t index) ;
